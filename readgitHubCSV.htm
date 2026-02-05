@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV 資料呈現</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f7f6; }
+        h2 { color: #333; }
+        .table-container { overflow-x: auto; box-shadow: 0 2px 15px rgba(0,0,0,0.1); border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #007bff; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+        #loader { margin-bottom: 10px; color: #666; }
+    </style>
+</head>
+<body>
+
+    <h2>胸痛嚴重度與生命徵象資料表</h2>
+    <div id="loader">正在載入資料...</div>
+    
+    <div class="table-container">
+        <table id="csv-table">
+            <thead>
+                <tr id="table-header"></tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const csvUrl = "https://mos2718.github.io/PHRChest/ChestDiscomfortSeverityVS.csv";
+
+        async function fetchCSV() {
+            try {
+                const response = await fetch(csvUrl);
+                const csvText = await response.text();
+                
+                // 使用 PapaParse 解析
+                Papa.parse(csvText, {
+                    header: true, // 自動將第一列視為標題
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        displayData(results);
+                        document.getElementById('loader').style.display = 'none';
+                    }
+                });
+            } catch (error) {
+                console.error("讀取失敗:", error);
+                document.getElementById('loader').innerText = "無法載入資料，請檢查 CORS 或網路連線。";
+            }
+        }
+
+        function displayData(results) {
+            const data = results.data;
+            const fields = results.meta.fields;
+
+            // 產生標題欄位
+            const headerRow = document.getElementById('table-header');
+            fields.forEach(field => {
+                const th = document.createElement('th');
+                th.textContent = field;
+                headerRow.appendChild(th);
+            });
+
+            // 產生資料列
+            const tbody = document.getElementById('table-body');
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                fields.forEach(field => {
+                    const td = document.createElement('td');
+                    td.textContent = row[field];
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 啟動程式
+        fetchCSV();
+    </script>
+</body>
+</html>
