@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>FHIR Chest Discomfort Questionnaire</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 600px; line-height: 1.6; }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; }
+        select, button { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; }
+        button { background-color: #007bff; color: white; cursor: pointer; border: none; margin-top: 10px; }
+        button:hover { background-color: #0056b3; }
+        #log { margin-top: 20px; padding: 15px; border: 1px solid #eee; background: #f9f9f9; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <h2>胸部不適評估 (FHIR)</h2>
+    <p>Patient ID: 53688389</p>
+
+    <div class="form-group">
+        <label>嚴重程度 (Severity):</label>
+        <select id="severitySelect"><option>載入中...</option></select>
+    </div>
+
+    <div class="form-group">
+        <label>疼痛性質 (Pain Quality):</label>
+        <select id="qualitySelect"><option>載入中...</option></select>
+    </div>
+
+    <div class="form-group">
+        <label>擴散部位 (Radiation):</label>
+        <select id="radiationSelect"><option>載入中...</option></select>
+    </div>
+
+    <button onclick="submitObservation()">上傳至 FHIR Server</button>
+
+    <div id="log">系統訊息將顯示於此...</div>
+
+    <script>
+        const patientId = "53688389";
+        const fhirBaseUrl = "https://hapi.fhir.org/baseR4/Observation";
+
+        // CSV 設定：[Select ID, 檔案名稱, 描述名稱]
+        const csvConfigs = [
+            ["severitySelect", "ChestDiscomfortSeverityVS.csv", "Severity"],
+            ["qualitySelect", "ChestDiscomfortPainQualityVS.csv", "Pain Quality"],
+            ["radiationSelect", "ChestDiscomfortRadiationVS.csv", "Radiation"]
+        ];
+
+        // 頁面初始化：依序讀取 CSV
+        async function init() {
+            for (const [selectId, fileName, label] of csvConfigs) {
+                try {
+                    const response = await fetch(fileName);
+                    if (!response.ok) throw new Error(`無法讀取 ${fileName}`);
+                    const text = await response.text();
+                    populateSelect(selectId, text);
+                } catch (err) {
+                    document.getElementById(selectId).innerHTML = `<option>讀取失敗</option>`;
+                    console.error(err);
+                }
+            }
+        }
+
+        // 解析 CSV 文字並填入選單
+        function populateSelect(id, csvText) {
+            const select = document.getElementById(id);
+            select.innerHTML = ""; // 清空
+            
+            const lines = csvText.split(/\r?\n/);
+            // 假設 CSV 第一行為標題: System,Code,Display
+            for (let i = 1; i < lines.length; i++) {
+                const row = lines[i].split(',');
+                if (row.length >= 3) {
+                    const [system, code, display] = row.map(item => item.trim());
+                    const opt = new Option(display, code);
+                    opt.dataset.system = system;
+                    select.add(opt);
+                }
+            }
+        }
+
+        // 產生並上傳 FHIR Observation
+        async function submitObservation() {
+            const logElement = document.getElementById('log');
+            logElement.innerText = "正在處理中...";
+
+            // 取得當前選擇的值
+            const getSelectedData = (id) => {
+                const el = document.getElementById(id);
+                const opt = el.options[el.selectedIndex];
+                return {
+                    code: opt.value,
+                    display: opt.text,
+                    system: opt.dataset.system
+                };
+            };
+
+            const sev = getSelectedData('severitySelect');
+            const qua = getSelectedData('qualitySelect');
+            const rad = getSelectedData('radiationSelect');
+
+            // 建立符合 FHIR R4 標準的 JSON
+            const observation = {
+                resourceType: "Observation",
+                status: "final",
+                code: {
+                    coding: [{ system: "http://loinc.org", code: "10154-3", display: "Chief complaint Chest pain" }]
+                },
+                subject: { reference: `Patient/${patientId}` },
+                effectiveDateTime: new Date().toISOString(),
+                component: [
+                    { code: { text: "Severity" }, valueCodeableConcept: { coding: [{ system: sev.system, code: sev.code, display: sev.display }] } },
+                    { code: { text: "Pain Quality" }, valueCodeableConcept: { coding: [{ system: qua.system, code: qua.code, display: qua.display }] } },
+                    { code: { text: "Radiation" }, valueCodeableConcept: { coding: [{ system: rad.system, code: rad.code, display: rad.display }] } }
+                ]
+            };
+
+            try {
+                const response = await fetch(fhirBaseUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/fhir+json' },
+                    body: JSON.stringify(observation)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    logElement.innerText = "【上傳成功】\n資源 ID: " + result.id + "\n\nJSON 內容:\n" + JSON.stringify(result, null, 2);
+                } else {
+                    logElement.innerText = "【伺服器回傳錯誤】\n" + JSON.stringify(result, null, 2);
+                }
+            } catch (err) {
+                logElement.innerText = "【網路錯誤】\n" + err.message;
+            }
+        }
+
+        // 啟動載入
+        init();
+    </script>
+</body>
+</html>
