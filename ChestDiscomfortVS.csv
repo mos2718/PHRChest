@@ -1,0 +1,10 @@
+valueSet,code,Chinese,English,System
+ChestDiscomfortPainQualityVS,crushing,壓迫感,Crushing sensation,https://example.org/codesystem/chest-discomfort
+ChestDiscomfortPainQualityVS,sharp,銳痛,Sharp pain,https://example.org/codesystem/chest-discomfort
+ChestDiscomfortPainQualityVS,burning,灼熱感,Burning sensation,https://example.org/codesystem/chest-discomfort
+ChestDiscomfortRadiationVS,leftArm,左臂,Left arm,https://example.org/codesystem/chest-discomfort
+ChestDiscomfortRadiationVS,jaw,下顎,Jaw,https://example.org/codesystem/chest-discomfort
+ChestDiscomfortRadiationVS,back,背部,Back,https://example.org/codesystem/chest-discomfort
+ChestDiscomfortSeverityVS,mild,輕微,Mild,https://example.org/codesystem/chest-discomfort
+ChestDiscomfortSeverityVS,moderate,中度,Moderate,https://example.org/codesystem/chest-discomfort
+ChestDiscomfortSeverityVS,severe,嚴重,Severe,https://example.org/codesystem/chest-discomfort
