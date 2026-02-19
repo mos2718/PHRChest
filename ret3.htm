@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CSV 本地讀取</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #eee; }
+    </style>
+</head>
+<body>
+    <table id="myTable"></table>
+
+    <script>
+        // 假設檔案就在旁邊，檔名為 data.csv
+        const fileName = "ChestDiscomfortSeverityVS.csv";
+
+        fetch(fileName)
+            .then(response => response.text())
+            .then(csvText => {
+                const rows = csvText.split('\n');
+                const table = document.getElementById('myTable');
+                
+                rows.forEach((row, index) => {
+                    if (row.trim() === "") return; // 跳過空行
+                    const tr = document.createElement('tr');
+                    const cols = row.split(',');
+                    
+                    cols.forEach(col => {
+                        const cell = document.createElement(index === 0 ? 'th' : 'td');
+                        cell.textContent = col.trim();
+                        tr.appendChild(cell);
+                    });
+                    table.appendChild(tr);
+                });
+            })
+            .catch(err => console.error("讀取失敗：", err));
+    </script>
+</body>
+</html>
